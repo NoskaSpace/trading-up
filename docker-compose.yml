@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+    container_name: trading_up_app
+    command: uvicorn src.app.api:app --host 0.0.0.0 --port ${APP_PORT:-8000}
+    env_file:
+      - ./.env
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - trading_internal
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: trading_up_frontend
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=/api
+    networks:
+      - trading_internal
+
+networks:
+  trading_internal:
+    driver: bridge
