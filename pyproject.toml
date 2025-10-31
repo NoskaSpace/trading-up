@@ -10,6 +10,8 @@ dependencies = [
     "uvicorn>=0.27",
     "pandas>=2.2",
     "python-telegram-bot>=20.7",
+    "PyJWT>=2.9",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
