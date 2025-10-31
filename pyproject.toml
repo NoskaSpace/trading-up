@@ -1,0 +1,28 @@
+[project]
+name = "trading-up"
+version = "0.1.0"
+description = "Modular trading application MVP"
+authors = [{ name = "Trading Up" }]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "pandas>=2.2",
+    "python-telegram-bot>=20.7",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
