@@ -12,11 +12,33 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 app = FastAPI(title="Trading MVP", version="0.1.0")
 
+
+def _get_required_env(name: str) -> str:
+    """필수 환경 변수를 조회하여 누락 시 명확한 오류를 발생시킨다."""
+
+    value = os.environ.get(name)
+    if value is None or value.strip() == "":
+        raise RuntimeError(f"{name} 환경 변수가 설정되지 않았습니다. 실행 환경 구성을 확인하세요.")
+    return value
+
+
+def _get_int_env(name: str, default: int) -> int:
+    """정수형 환경 변수를 파싱하면서 잘못된 설정을 조기에 감지한다."""
+
+    raw_value = os.environ.get(name)
+    if raw_value is None:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} 환경 변수는 정수로 설정해야 합니다.") from exc
+
+
 # 환경 변수에서 관리자 자격 증명을 불러와서 동적으로 구성한다.
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "change-me")
-SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "unsafe-development-key")
-TOKEN_EXPIRE_MINUTES = int(os.environ.get("TOKEN_EXPIRE_MINUTES", "60"))
+ADMIN_USERNAME = _get_required_env("ADMIN_USERNAME")
+ADMIN_PASSWORD = _get_required_env("ADMIN_PASSWORD")
+SECRET_KEY = _get_required_env("AUTH_SECRET_KEY")
+TOKEN_EXPIRE_MINUTES = _get_int_env("TOKEN_EXPIRE_MINUTES", 60)
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -46,6 +68,11 @@ def _decode_access_token(token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="토큰이 만료되었습니다.") from exc
+    except jwt.InvalidSignatureError as exc:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="토큰 서명이 올바르지 않습니다. 서버의 비밀키 설정을 확인하세요.",
+        ) from exc
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다.") from exc
 
