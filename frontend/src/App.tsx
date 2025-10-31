@@ -22,7 +22,18 @@ import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./components/ui/table";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API_BASE_URL = (() => {
+  const value = import.meta.env.VITE_API_BASE_URL;
+  if (typeof value !== "string") {
+    return "";
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : "";
+})();
+
+const CONFIGURATION_ERROR_MESSAGE = API_BASE_URL
+  ? ""
+  : "VITE_API_BASE_URL 환경 변수가 설정되지 않아 서버와 통신할 수 없습니다. .env 파일을 확인하세요.";
 
 interface Credentials {
   username: string;
@@ -85,7 +96,7 @@ export default function App() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [history, setHistory] = useState<StatusRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string>(CONFIGURATION_ERROR_MESSAGE);
 
   const table = useStatusTable(history);
 
@@ -115,6 +126,11 @@ export default function App() {
 
   const fetchStatus = useCallback(async () => {
     if (!token) {
+      return;
+    }
+
+    if (!API_BASE_URL) {
+      setError(CONFIGURATION_ERROR_MESSAGE);
       return;
     }
 
@@ -158,11 +174,15 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [handleLogout, token]);
+  }, [CONFIGURATION_ERROR_MESSAGE, handleLogout, token]);
 
   const handleLogin = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (!API_BASE_URL) {
+        setError(CONFIGURATION_ERROR_MESSAGE);
+        return;
+      }
       setLoading(true);
       setError("");
 
@@ -194,12 +214,12 @@ export default function App() {
         setLoading(false);
       }
     },
-    [credentials.password, credentials.username]
+    [CONFIGURATION_ERROR_MESSAGE, credentials.password, credentials.username]
   );
 
   useEffect(() => {
     // 토큰이 존재하면 대시보드 진입 시 최신 상태를 자동으로 조회한다.
-    if (token) {
+    if (token && API_BASE_URL) {
       fetchStatus().catch(() => {
         // fetchStatus 내에서 오류를 처리하므로 여기서는 무시한다.
       });
@@ -256,7 +276,11 @@ export default function App() {
                   placeholder="********"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || Boolean(CONFIGURATION_ERROR_MESSAGE)}
+              >
                 {loading ? "로그인 중..." : "로그인"}
               </Button>
             </form>
@@ -275,7 +299,7 @@ export default function App() {
                 <CardTitle>서비스 상태</CardTitle>
                 <CardDescription>보호된 API에서 최신 지표를 가져옵니다.</CardDescription>
               </div>
-              <Button onClick={fetchStatus} disabled={loading}>
+              <Button onClick={fetchStatus} disabled={loading || !API_BASE_URL}>
                 {loading ? "갱신 중..." : "새로 고침"}
               </Button>
             </CardHeader>
