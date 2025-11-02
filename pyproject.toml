@@ -1,0 +1,22 @@
+[project]
+name = "trading-up"
+version = "0.1.0"
+description = "Korea Investment & Securities trading SDK with backtesting support"
+authors = [{name = "Trading Up"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ['.']
